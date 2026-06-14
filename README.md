@@ -1,1 +1,1 @@
-# Shopmanager
+Scripts i made for Hypixel Bedwars
