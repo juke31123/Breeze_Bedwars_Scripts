@@ -1,15 +1,16 @@
-script.description = "Echest Aura";
+script.description = "Echest Aura.";
 script.allowBind = true;
 script.allowHold = true;
 
 var ECHEST_ID = 130;
 var RANGE = 5;
 var EYE_HEIGHT = 1.62;
+var REOPEN_DELAY = 3;
 
 var scanDelay = new IntSetting(script, "Scan Delay", "Delay between scans in ticks.", 1, 1, 20, 1);
 var turnSpeed = new IntSetting(script, "Rotation Speed", "How fast to rotate.", 180, 10, 720, 10);
 var closeOnRelease = new BooleanSetting(script, "Close GUI On Release", "Close the current GUI when the keybind is released.", true);
-var closeDelay = new IntSetting(script, "Close GUI Delay", "Ticks to wait before closing the GUI.", 0, 0, 19, 1);
+var closeDelay = new IntSetting(script, "Close GUI Delay", "Ticks to wait before closing the GUI.", 0, 0, 5, 1);
 
 closeDelay.visible(() => closeOnRelease.getValue());
 
@@ -17,8 +18,14 @@ var ticks = 0;
 var chest = null;
 var rotated = false;
 var clickWait = 0;
+var reopenWait = 0;
 var usePulse = 0;
 var holdingUse = false;
+var hadChestGui = false;
+
+function chestGuiOpen() {
+    return mc.currentScreen != null && ("" + mc.currentScreen).indexOf("GuiChest") != -1;
+}
 
 function stopUsingItem() {
     if (holdingUse) {
@@ -37,6 +44,8 @@ function clearTarget() {
 
 function resetScript() {
     ticks = 0;
+    reopenWait = 0;
+    hadChestGui = false;
     clearTarget();
     stopUsingItem();
 }
@@ -124,7 +133,8 @@ function lookingAtChest() {
 }
 
 function clickChest() {
-    if (chest == null || clickWait > 0 || mc.currentScreen != null) return;
+    if (chest == null || clickWait > 0 || reopenWait > 0 || mc.currentScreen != null) return;
+    if (chestGuiOpen()) return;
 
     if (lookingAtChest()) {
         var hit = mc.objectMouseOver;
@@ -132,7 +142,7 @@ function clickChest() {
         var vec = hit.hitVec || new Vec3(chest.posX + 0.5, chest.posY + 0.5, chest.posZ + 0.5);
 
         mc.playerController.rightClickBlock(chest, side, vec);
-        clickWait = 10;
+        clickWait = REOPEN_DELAY;
         return;
     }
 
@@ -140,14 +150,14 @@ function clickChest() {
         mc.gameSettings.keyBindUseItem.keyDown = true;
         holdingUse = true;
         usePulse = 2;
-        clickWait = 10;
+        clickWait = REOPEN_DELAY;
     }
 }
 
 rotationManager.setPriority(20);
 
 rotationManager.onRotate(function() {
-    if (mc.player == null || mc.world == null || chest == null) {
+    if (mc.player == null || mc.world == null || chest == null || mc.currentScreen != null) {
         rotated = false;
         return;
     }
@@ -159,6 +169,15 @@ rotationManager.onRotate(function() {
 script.addListener("PreTickEvent", function(event) {
     if (usePulse > 0 && --usePulse <= 0) stopUsingItem();
     if (clickWait > 0) clickWait--;
+    if (reopenWait > 0) reopenWait--;
+
+    var guiOpen = chestGuiOpen();
+
+    if (hadChestGui && !guiOpen) {
+        reopenWait = REOPEN_DELAY;
+    }
+
+    hadChestGui = guiOpen;
 
     if (mc.player == null || mc.world == null || mc.currentScreen != null) {
         clearTarget();
@@ -170,7 +189,6 @@ script.addListener("PreTickEvent", function(event) {
         ticks = 0;
         chest = findChest();
         rotated = false;
-        clickWait = 0;
     }
 
     clickChest();
