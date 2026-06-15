@@ -10,7 +10,7 @@ var REOPEN_DELAY = 3;
 var scanDelay = new IntSetting(script, "Scan Delay", "Delay between scans in ticks.", 1, 1, 20, 1);
 var turnSpeed = new IntSetting(script, "Rotation Speed", "How fast to rotate.", 180, 10, 720, 10);
 var closeOnRelease = new BooleanSetting(script, "Close GUI On Release", "Close the current GUI when the keybind is released.", true);
-var closeDelay = new IntSetting(script, "Close GUI Delay", "Ticks to wait before closing the GUI.", 0, 0, 5, 1);
+var closeDelay = new IntSetting(script, "Close GUI Delay", "Ticks to wait before closing the GUI.", 0, 0, 10, 1);
 
 closeDelay.visible(() => closeOnRelease.getValue());
 
